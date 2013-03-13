@@ -90,9 +90,9 @@ var kat = {
     $.getJSON(owlSettings.library + "/_design/owl/by-path?key=" + pathBehind, function(Doc) {
 
       // If there is road ahead, call back into thyself
-      if(_.isArray(pathBehind.slice('/')))
+      if(_.isArray(pathBehind.slice('/'))) {
         // pass one back
-        pathAhead[] += pathBehind.pop()
+        //pathAhead[] += pathBehind.pop()
         return kat.rabbitHole(pathBehind, pathAhead, katObject, katFilePath)
       }    
       else {
@@ -100,14 +100,14 @@ var kat = {
         fs.writeFile(katFilePath, JSON.stringify(katObject, null, 4))
       }
     })
-  }
+  },
 
 
 
   /*
    * Translate a path attribute found in KA Lite Topics.json to the JSON path of that object
    */
-  var katPathToJsonPath = function(path, topics) {
+  katPathToJsonPath : function(path, katObject) {
     // The slugs we'll be looking for
     var slugs = path.split("/")
     // Get rid of unneccessary blanks at end and beginning of array
@@ -118,15 +118,19 @@ var kat = {
     var map = []
 
     $.each(slugs, function(slugKey, slug) {
-      if(_.has(topics, "children")) { 
-        $.each(topics.children, function(mapKey, child) {
+      if(_.has(katObject, "children")) { 
+        $.each(katObject.children, function(mapKey, child) {
+          //console.log("Child: ")
+          //console.log(child)
           if(child.slug == slug){
             map[slugKey] = mapKey
-            object = child
+            katObject = child
           }
         })
       }
     })
+
+    console.log(map)
 
     // construct the translated path
     var translatedPath = "/"
@@ -149,18 +153,18 @@ var test_kat_katPathToJsonPath = function() {
     "path":"/",
     "slug":"",
     "children": [
-      {
+      {                                  // 0
         "path":"/foo",
         "slug":"foo",
         "children": [
           { },
-          {
+          {                              //1
             "path":"/foo/bar",
             "slug":"bar",
             "children": [
               { },
               { },
-              {
+              {                          //2
                 "path":"/foo/bar/dan", 
                 "slug":"dan",
               }
@@ -191,5 +195,9 @@ var test_kat_katPathToJsonPath = function() {
 }
 
 
+/*
+ * Run tests
+ */
 
+test_kat_katPathToJsonPath()
 
