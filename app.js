@@ -49,39 +49,20 @@ var kat = {
    */
   add : function(katFilePath, newItem) {
 
-    console.log("newItem:")
-    console.log(newItem)
-
     fs.readFile(katFilePath, "utf8", function(err, katJson) {
       
       var katObject = JSON.parse(katJson)
-      console.log("katObject:")
-      console.log(katObject)
       
       // Find what will be the actual JSON path to the newItem, which may be an incomplete path
       var katPathInfo = kat.katPathInfo(newItem.path, katObject).split("/")
-      jsonPath.pop()
-      jsonPath.shift()
-      console.log("newItemJsonPathArray:")
-      console.log(jsonPath)
 
-      var katPath = newItem.path.split("/")
-      katPath.pop()
-      katPath.shift()
-      console.log("katPath:")
-      console.log(katPath)
-
-      if(katPath.length != (jsonPath.length / 2)) {
+      if(katPathInfo.pathAhead) {
         // Blaze the trail
-        var pathAhead = katPath.shift((jsonPath.length / 2))
-        console.log("pathAhead:")
-        console.log(pathAhead)
-        var pathBehind = []
-        kat.rabbitHole(pathBehind, pathAhead, katObject, katFilePath)
+        kat.blaze(katPathInfo.pathBehind, katPathAhead.pathAhead, katObject, katFilePath)
       }
       else {
         // We can just add the object without blazing a trail
-        katObject = jsonpatch.apply(JSON.stringify(katObject), [{op: 'add', path: jsonPath + "0", value: newItem}])
+        katObject = jsonpatch.apply(JSON.stringify(katObject), [{op: 'add', path: katPathInfo.jsonPath + "0", value: newItem}])
         fs.writeFile(owlSettings.dataFolder + "/groups/" + req.params.groupId + "/topics", JSON.stringify(topics, null, 4))
       }
 
@@ -93,7 +74,7 @@ var kat = {
   /*
    * Recursive loop that builds the topic tree to a specific path destination
    */
-  rabbitHole : function(pathBehind, pathAhead, katObject, katFilePath) {
+  blaze : function(pathBehind, pathAhead, katObject, katFilePath) {
     $.getJSON(owlSettings.library + "/_design/owl/by-path?key=" + pathBehind, function(Doc) {
 
       // If there is road ahead, call back into thyself
@@ -114,9 +95,9 @@ var kat = {
   /*
    * Translate a path attribute found in KA Lite Topics.json to the JSON path of that object
    */
-  katPathInfo : function(path, katObject) {
+  katPathInfo : function(fullPath, katObject) {
     // The slugs we'll be looking for
-    var slugs = path.split("/")
+    var slugs = fullPath.split("/").pop().shift()
     // Get rid of unneccessary blanks at end and beginning of array
     slugs.pop()
     slugs.shift()
@@ -143,9 +124,13 @@ var kat = {
       pathBehind += slugs[slugOrder] + "/"
     })
 
+    // @todo get pathAhead
+    var pathAhead
     return { 
+      fullPath: fullPath,
       jsonPath: jsonPath,
-      pathBehind: pathBehind 
+      pathBehind: pathBehind, 
+      pathAhead: pathAhead
     }
   }
 
