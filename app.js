@@ -26,8 +26,8 @@ var owlSettings = {
  */
 app.post('/add-couch-doc-to-group/:groupId/:couchId', function(req, res){
   $.getJSON(owlSettings.library + "/" + req.params.couchId, function(couchDoc) {
-    var katJsonFilePath = owlSettings.dataFolder + "/groups/" + groupId + "/topics"
-    katJson.add(katJsonFilePath, couchDoc)
+    var katJsonFilePath = owlSettings.dataFolder + "/groups/" + req.params.groupId + "/topics"
+    kat.add(katJsonFilePath, couchDoc)
   })
   res.send('success')
 })
@@ -49,28 +49,35 @@ var kat = {
    */
   add : function(katFilePath, newItem) {
 
+    console.log("newItem:")
+    console.log(newItem)
+
     fs.readFile(katFilePath, "utf8", function(err, katJson) {
       
       var katObject = JSON.parse(katJson)
+      console.log("katObject:")
+      console.log(katObject)
       
-      // Find what will be the actual JSON path to the newItem
-      var newItemJsonPath = kat.katPathToJsonPath(newItem.path, katObject)
-      var newItemJsonPathArray = jsonPath.split("/")
-      newItemJsonPathArray.pop()
-      newItemJsonPathArray.shift()
-      //console.log(jsonPathArray)
+      // Find what will be the actual JSON path to the newItem, which may be an incomplete path
+      var katPathInfo = kat.katPathInfo(newItem.path, katObject).split("/")
+      jsonPath.pop()
+      jsonPath.shift()
+      console.log("newItemJsonPathArray:")
+      console.log(jsonPath)
 
-      var newItemKatPath = newItem.path
-      var newItemKatPathArray = newItemKatPath.split("/")
-      newItemKatPathArray.pop()
-      newItemKatPathArray.shift()
-      //console.log(newItemPathArray)
+      var katPath = newItem.path.split("/")
+      katPath.pop()
+      katPath.shift()
+      console.log("katPath:")
+      console.log(katPath)
 
-      if(newItemKatPathArray.length != (newItemJsonPathArray.length / 2)) {
+      if(katPath.length != (jsonPath.length / 2)) {
         // Blaze the trail
-        var pathAhead = resourcePathArray.shift((jsonPathArray.length / 2))
+        var pathAhead = katPath.shift((jsonPath.length / 2))
+        console.log("pathAhead:")
+        console.log(pathAhead)
         var pathBehind = []
-        katJson.rabbitHole(pathBehind, pathAhead, katObject, katFilePath)
+        kat.rabbitHole(pathBehind, pathAhead, katObject, katFilePath)
       }
       else {
         // We can just add the object without blazing a trail
@@ -107,21 +114,19 @@ var kat = {
   /*
    * Translate a path attribute found in KA Lite Topics.json to the JSON path of that object
    */
-  katPathToJsonPath : function(path, katObject) {
+  katPathInfo : function(path, katObject) {
     // The slugs we'll be looking for
     var slugs = path.split("/")
     // Get rid of unneccessary blanks at end and beginning of array
     slugs.pop()
     slugs.shift()
 
-    // The array places we find the corresponding slugs
+    // The array index we find the corresponding slugs
     var map = []
 
     $.each(slugs, function(slugKey, slug) {
       if(_.has(katObject, "children")) { 
         $.each(katObject.children, function(mapKey, child) {
-          //console.log("Child: ")
-          //console.log(child)
           if(child.slug == slug){
             map[slugKey] = mapKey
             katObject = child
@@ -130,15 +135,18 @@ var kat = {
       }
     })
 
-    console.log(map)
-
     // construct the translated path
-    var translatedPath = "/"
+    var jsonPath = "/"
+    var pathBehind = "/"
     $.each(map, function(slugOrder, slugKey){
-      translatedPath += "children/" + slugKey + "/"
+      jsonPath += "children/" + slugKey + "/"
+      pathBehind += slugs[slugOrder] + "/"
     })
 
-    return translatedPath 
+    return { 
+      jsonPath: jsonPath,
+      pathBehind: pathBehind 
+    }
   }
 
 }
@@ -148,24 +156,24 @@ var kat = {
 /*
  * TEST kat.katPathToJsonPath(path, object)
  */
-var test_kat_katPathToJsonPath = function() {
+var test_kat_katPathInfo = function() {
   var object={
     "path":"/",
     "slug":"",
     "children": [
       {                                  // 0
-        "path":"/foo",
+        "path":"/foo/",
         "slug":"foo",
         "children": [
           { },
           {                              //1
-            "path":"/foo/bar",
+            "path":"/foo/bar/",
             "slug":"bar",
             "children": [
               { },
               { },
               {                          //2
-                "path":"/foo/bar/dan", 
+                "path":"/foo/bar/dan/", 
                 "slug":"dan",
               }
             ]
@@ -180,17 +188,27 @@ var test_kat_katPathToJsonPath = function() {
 
   // The object path we'll be searching for plus something at the end to try and trip up the process
   var path="/foo/bar/dan/boing/"
-  var shouldBe = "/children/0/children/1/children/2/"
-
-  var translatedPath = kat.katPathToJsonPath(path, object)
-
-  if(translatedPath == shouldBe) {
-    console.log("TEST: pass")
-    console.log(translatedPath)
+  var shouldBe = {
+    jsonPath: "/children/0/children/1/children/2/",
+    pathBehind: "/foo/bar/dan/",
+    pathAhead: "/boing/"
   }
-  else {
-    console.log("TEST:fail")
-    console.log(translatedPath + " should be " + "/children/0/children/1/children/2/")
+
+  var katPathInfo = kat.katPathInfo(path, object)
+
+  if(katPathInfo.jsonPath != shouldBe.jsonPath) {
+    console.log("TEST:fail -- katPathInfo.jsonPath")
+    console.log(katPathInfo.jsonPath + " should be " + shouldBe.jsonPath)
+  }
+  
+  if(katPathInfo.pathBehind != shouldBe.pathBehind) {
+    console.log("TEST:fail -- katPathInfo.pathBehind")
+    console.log(katPathInfo.pathBehind + " should be " + shouldBe.pathBehind)
+  }
+
+  if(katPathInfo.pathAhead != shouldBe.pathAhead) {
+    console.log("TEST:fail -- katPathInfo.pathAhead")
+    console.log(katPathInfo.pathAhead + " should be " + shouldBe.pathAhead)
   }
 }
 
@@ -198,5 +216,5 @@ var test_kat_katPathToJsonPath = function() {
 /*
  * Run tests
  */
-test_kat_katPathToJsonPath()
+test_kat_katPathInfo()
 
