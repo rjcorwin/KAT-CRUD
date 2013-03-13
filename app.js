@@ -8,94 +8,143 @@ var jsonpatch = require("json-patch")
 // For Express 3
 app.use(express.bodyParser())
 
-var library = "http://192.168.0.101:5984/library"
-var dataFolder = "/Users/rj/Box/OWL/data"
 
-app.post('/addCouchResourceToGroup/:groupId/:couchId', function(req, res){
-  $.getJSON(library + "/" + req.params.couchId, function(resource) {
-    addResourceToGroup(req.params.groupId, resource)
+
+
+/*
+ * Settings
+ */
+var owlSettings = {
+  library: "http://192.168.0.101:5984/library",
+  dataFolder: "/Users/rj/Box/OWL/data"
+}
+
+
+
+/*
+ * HTTP API
+ */
+app.post('/add-couch-doc-to-group/:groupId/:couchId', function(req, res){
+  $.getJSON(owlSettings.library + "/" + req.params.couchId, function(couchDoc) {
+    var katJsonFilePath = owlSettings.dataFolder + "/groups/" + groupId + "/topics"
+    katJson.add(katJsonFilePath, couchDoc)
   })
   res.send('success')
 })
 app.listen(4200)
 console.log('Listening on port 4200')
 
-var fixTopicInfo = function (groupId, jsonPath) {
-  // @todo
-}
 
-var addResourceToGroup = function(groupId, resource) {
-  var topicsFilePath = dataFolder + "/groups/" + groupId + "/topics"
-  fs.readFile(topicsFilePath, "utf8", function(err, topicsJson) {
-    
-    var topics = JSON.parse(topicsJson)
-    
-    var jsonPath = translateKatPathToJsonPath(resource.path, topics)
-    var jsonPathArray = jsonPath.split("/")
-    jsonPathArray.pop()
-    jsonPathArray.shift()
-    console.log(jsonPathArray)
 
-    var resourcePathArray = resource.path.split("/")
-    resourcePathArray.pop()
-    resourcePathArray.shift()
-    console.log(resourcePathArray)
-
-    var fillInTopicInfo = false
-    if(resourcePathArray.length != (jsonPathArray.length / 2)) {
-      fillInTopicInfo = true
-      // Blaze the trail, fill in topic info later
-      var pathAhead = resourcePathArray.shift((jsonPathArray.length / 2))
-      $.each(pathAhead, function(key, value) {
-        jsonPath += "0/children/"
-      })
-    }
-
-    jsonpatch.apply(JSON.stringify(topics), [{op: 'add', path: jsonPath + "0", value: resource}])
-
-    fs.writeFile(dataFolder + "/groups/" + req.params.groupId + "/topics", JSON.stringify(topics, null, 4))
-    if(fillInTopicInfo == true) {
-      fixTopicInfo(req.params.groupId, jsonPath)
-    }
-  })
-  
-}
 
 /*
- * Translate a path attribute found in KA Lite Topics.json to the JSON path of that object
+ *
  */
-var translateKatPathToJsonPath = function(path, topics) {
-  // The slugs we'll be looking for
-  var slugs = path.split("/")
-  // Get rid of unneccessary blanks at end and beginning of array
-  slugs.pop()
-  slugs.shift()
+var kat = {
 
-  // The array places we find the corresponding slugs
-  var map = []
 
-  $.each(slugs, function(slugKey, slug) {
-    if(_.has(topics, "children")) { 
-      $.each(topics.children, function(mapKey, child) {
-        if(child.slug == slug){
-          map[slugKey] = mapKey
-          object = child
-        }
-      })
-    }
-  })
 
-  // construct the translated path
-  var translatedPath = "/"
-  $.each(map, function(slugOrder, slugKey){
-    translatedPath += "children/" + slugKey + "/"
-  })
+  /* 
+   * Add a new item to a KAT file.
+   */
+  add : function(katFilePath, newItem) {
 
-  return translatedPath 
+    fs.readFile(katFilePath, "utf8", function(err, katJson) {
+      
+      var katObject = JSON.parse(katJson)
+      
+      // Find what will be the actual JSON path to the newItem
+      var newItemJsonPath = kat.katPathToJsonPath(newItem.path, katObject)
+      var newItemJsonPathArray = jsonPath.split("/")
+      newItemJsonPathArray.pop()
+      newItemJsonPathArray.shift()
+      //console.log(jsonPathArray)
+
+      var newItemKatPath = newItem.path
+      var newItemKatPathArray = newItemKatPath.split("/")
+      newItemKatPathArray.pop()
+      newItemKatPathArray.shift()
+      //console.log(newItemPathArray)
+
+      if(newItemKatPathArray.length != (newItemJsonPathArray.length / 2)) {
+        // Blaze the trail
+        var pathAhead = resourcePathArray.shift((jsonPathArray.length / 2))
+        var pathBehind = []
+        katJson.rabbitHole(pathBehind, pathAhead, katObject, katFilePath)
+      }
+      else {
+        // We can just add the object without blazing a trail
+        katObject = jsonpatch.apply(JSON.stringify(katObject), [{op: 'add', path: jsonPath + "0", value: newItem}])
+        fs.writeFile(owlSettings.dataFolder + "/groups/" + req.params.groupId + "/topics", JSON.stringify(topics, null, 4))
+      }
+
+    })
+  },
+
+
+
+  /*
+   * Recursive loop that builds the topic tree to a specific path destination
+   */
+  rabbitHole : function(pathBehind, pathAhead, katObject, katFilePath) {
+    $.getJSON(owlSettings.library + "/_design/owl/by-path?key=" + pathBehind, function(Doc) {
+
+      // If there is road ahead, call back into thyself
+      if(_.isArray(pathBehind.slice('/')))
+        // pass one back
+        pathAhead[] += pathBehind.pop()
+        return kat.rabbitHole(pathBehind, pathAhead, katObject, katFilePath)
+      }    
+      else {
+        // We've reached the end of the path
+        fs.writeFile(katFilePath, JSON.stringify(katObject, null, 4))
+      }
+    })
+  }
+
+
+
+  /*
+   * Translate a path attribute found in KA Lite Topics.json to the JSON path of that object
+   */
+  var katPathToJsonPath = function(path, topics) {
+    // The slugs we'll be looking for
+    var slugs = path.split("/")
+    // Get rid of unneccessary blanks at end and beginning of array
+    slugs.pop()
+    slugs.shift()
+
+    // The array places we find the corresponding slugs
+    var map = []
+
+    $.each(slugs, function(slugKey, slug) {
+      if(_.has(topics, "children")) { 
+        $.each(topics.children, function(mapKey, child) {
+          if(child.slug == slug){
+            map[slugKey] = mapKey
+            object = child
+          }
+        })
+      }
+    })
+
+    // construct the translated path
+    var translatedPath = "/"
+    $.each(map, function(slugOrder, slugKey){
+      translatedPath += "children/" + slugKey + "/"
+    })
+
+    return translatedPath 
+  }
+
 }
 
 
-var test_translateKatPathToJsonPath = function() {
+
+
+
+
+var test_kat_katPathToJsonPath = function() {
   var object={
     "path":"/",
     "slug":"",
@@ -129,7 +178,7 @@ var test_translateKatPathToJsonPath = function() {
   var path="/foo/bar/dan/boing/"
   var shouldBe = "/children/0/children/1/children/2/"
 
-  var translatedPath = translateKatPathToJsonPath(path, object)
+  var translatedPath = kat.katPathToJsonPath(path, object)
 
   if(translatedPath == shouldBe) {
     console.log("TEST: pass")
