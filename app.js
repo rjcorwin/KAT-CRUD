@@ -145,9 +145,9 @@ var kat = {
 
 
 
-
-
-
+/*
+ * TEST kat.katPathToJsonPath(path, object)
+ */
 var test_kat_katPathToJsonPath = function() {
   var object={
     "path":"/",
@@ -198,6 +198,5 @@ var test_kat_katPathToJsonPath = function() {
 /*
  * Run tests
  */
-
 test_kat_katPathToJsonPath()
 
