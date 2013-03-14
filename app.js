@@ -24,9 +24,25 @@ var katBackend = {
  * HTTP API
  */
 
-app.post('/add-item-to-kat-file', function(req, res){
+// Create
+app.post('/', function(req, res){
+  // @todo
+})
+
+// Read
+app.get('/', function(req, res){
+  // @todo
+})
+
+// Update
+app.put('/', function(req, res){
   kat.addItemToKatFile(req.param.katFilePath, req.body)
   res.send('success')
+})
+
+// Delete
+app.delete('/', function(req, res){
+  // @todo
 })
 
 app.listen(4200)
@@ -74,7 +90,7 @@ var kat = {
     // If there is road ahead, blaze the trail to the next cairn and call back into thyself with the result
     if(_.isArray(katPathDiff.pathBehind.slice('/'))) {
 
-      $.getJSON(katBackend.library + "/_design/owl/by-path?key=" + katPathDiff.pathBehind, function(Doc) {
+      $.getJSON(katBackend..library + "/_design/owl/by-path?key=" + katPathDiff.pathBehind, function(Doc) {
 
         katObject.children.push(Doc)
         kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
