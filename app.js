@@ -34,7 +34,7 @@ app.post('/', function(req, res){
 // Read
 app.get('/', function(req, res){
   // @todo
-  var katFilePath // Could be katParent, could be param in url
+  var katOriginPath // Could be over HTTP, could be a file
   var katPath // The item in the katFile to read
   var recursive // Get everything below katPath?
 })
@@ -59,6 +59,28 @@ console.log('Listening on port 4200')
  *
  */
 var kat = {
+
+
+
+  parentTree : {
+    settings: {
+      http: {
+        root: "http://192.168.0.101:5984/library/",
+        allItems: "_all_docs",
+        byPath: "_design/by-path?key=",
+        type: "CouchDB"
+      },
+      file: {
+        //filePath:"test/test.json"
+      }
+    },
+    getItemByPath : function(path, callback) {
+      if (this.settings.http.type == "CouchDB") {
+        // @todo Wondering if this is a good direction...
+      }
+    }
+  },
+
 
 
 
@@ -91,12 +113,12 @@ var kat = {
   addItemToKatObject : function(newItem, katObject, callback) {
 
     // Find what will be the actual JSON path to the newItem, which may be an incomplete path
-    var katPathDiff = kat.katPathDiff(newItem.path, katObject).split("/")
+    var katPathDiff = kat.katPathDiff(newItem.path, katObject)
 
     // If there is road ahead, blaze the trail to the next cairn and call back into thyself with the result
     if(_.isArray(katPathDiff.pathBehind.slice('/'))) {
 
-      $.getJSON(katParent.byPath + katPathDiff.pathBehind, function(Doc) {
+      $.getJSON(kat.parentTree.http.root + kat.parentTree.http.byPath + katPathDiff.pathBehind, function(Doc) {
 
         katObject.children.push(Doc)
         kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
@@ -109,7 +131,7 @@ var kat = {
     }    
     else {
       // We've reached the end of the path
-      katObject.children.push(Doc)
+      katObject.children.push(newItem)
       if (callback && typeof(callback) === "function") {
         callback(katObject)
       }
@@ -123,7 +145,7 @@ var kat = {
    */
   katPathDiff : function(fullPath, katObject) {
     // The slugs we'll be looking for
-    var slugs = fullPath.split("/").pop().shift()
+    var slugs = fullPath.split("/")
     // Get rid of unneccessary blanks at end and beginning of array
     slugs.pop()
     slugs.shift()
@@ -223,7 +245,69 @@ var test__kat_katPathDiff = function() {
   }
 }
 
+
+
+/*
+ * TEST kat.addItemToKatObject(newItem, katObject, callback)
+ */
+
 var test__kat_addItemToKatObject = function() {
+
+
+
+
+  // SETUP
+
+  var katObject = {
+    "path":"/",
+    "slug":"",
+    "children": [
+      {                                  // 0
+        "path":"/foo/",
+        "slug":"foo",
+        "children": [
+          { },
+          {                              //1
+            "path":"/foo/bar/",
+            "slug":"bar",
+            "children": [
+              { },
+              { },
+              {                          //2
+                "path":"/foo/bar/dan/", 
+                "slug":"dan",
+              }
+            ]
+          },
+          { }
+        ]
+      },
+      { },
+      { },
+    ]
+  }
+
+  var newItem = {
+    "path":"/foo/bar/dan/boing/test-item",
+    "slug":"test-item"
+  }
+
+
+
+
+  // EXECUTE
+
+  kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
+    // TEST
+
+    console.log("TEST:unknown -- katPathDiff.addItemToKatObject -- newKatObject:")
+    console.log(newKatObject)
+  })
+
+
+
+
+
 
 }
 
