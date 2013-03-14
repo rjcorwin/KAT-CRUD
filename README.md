@@ -1,1 +1,1 @@
-Utility for performing CRUD operations on Khan Academy Topics.json (KAT) structured files.
+HTTP API for performing CRUD operations on Khan Academy Topics.json (KAT) structured files.
