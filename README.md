@@ -1,1 +1,1 @@
-Utilities for moving data around in the BeLL System
+Utility for performing CRUD operations on Khan Academy Topics.json (KAT) structured files.
