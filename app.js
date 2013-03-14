@@ -67,7 +67,7 @@ var kat = {
       http: {
         root: "http://192.168.0.101:5984/library/",
         allItems: "_all_docs",
-        byPath: "_design/by-path?key=",
+        byPath: "_design/owl/_view/by-path?key=",
         type: "CouchDB"
       },
       file: {
@@ -105,24 +105,35 @@ var kat = {
     })
   },
 
-
+  count: 1,
 
   /*
    * Recursive loop that builds the topic tree to a specific path destination
    */
   addItemToKatObject : function(newItem, katObject, callback) {
+    
+    this.count++
 
     // Find what will be the actual JSON path to the newItem, which may be an incomplete path
     var katPathDiff = kat.katPathDiff(newItem.path, katObject)
-    console.log("katPathDiff:")
-    console.log(katPathDiff)
 
     // If there is road ahead, blaze the trail to the next cairn and call back into thyself with the result
-    if(_.isArray(katPathDiff.pathBehind.slice('/'))) {
+    if(katPathDiff.pathAhead != "/") {
+      var  nextItemURL = kat.parentTree.settings.http.root + 
+        kat.parentTree.settings.http.byPath + 
+        '"' + katPathDiff.pathBehind + katPathDiff.pathAhead.split('/')[1] + "/" + '"'
+      $.getJSON(nextItemURL, function(response) {
+        if (response.rows.lenght > 0) {
+          // We found something in the database to build out our path
+          var item = response.rows[0].value
+        }
+        else {
+          // We've reached the new item!
+          var item = newItem
+        }
 
-      $.getJSON(kat.parentTree.http.root + kat.parentTree.http.byPath + katPathDiff.pathBehind, function(Doc) {
+        jsonpatch.apply(katObject, [{op: 'add', path: katPathDiff.jsonPathBehind + "children", value: [item]}]);
 
-        katObject.children.push(Doc)
         kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
           // Send the new Object down the recursive rabbit whole
           return newKatObject
@@ -133,7 +144,7 @@ var kat = {
     }    
     else {
       // We've reached the end of the path
-      katObject.children.push(newItem)
+      jsonpatch.apply(katObject, [{op: 'add', path: katPathDiff.jsonPathBehind + "children", value: [newItem]}]);
       if (callback && typeof(callback) === "function") {
         callback(katObject)
       }
@@ -146,6 +157,8 @@ var kat = {
    * Translate a path attribute found in KA Lite Topics.json to the JSON path of that object
    */
   katPathDiff : function(fullPath, katObject) {
+
+
     // The slugs we'll be looking for
     var slugs = fullPath.split("/")
     // Get rid of unneccessary blanks at end and beginning of array
@@ -167,14 +180,13 @@ var kat = {
     })
 
     // construct the translated path
-    var jsonPath = "/"
+    var jsonPathBehind = "/"
     var pathBehind = "/"
     $.each(map, function(slugOrder, slugKey){
-      jsonPath += "children/" + slugKey + "/"
+      jsonPathBehind += "children/" + slugKey + "/"
       pathBehind += slugs[slugOrder] + "/"
     })
 
-    // @todo get pathAhead
     var slugsAhead = slugs
     var i = 0
     while(i < map.length) {
@@ -188,7 +200,7 @@ var kat = {
 
     return { 
       fullPath: fullPath,
-      jsonPath: jsonPath,
+      jsonPathBehind: jsonPathBehind,
       pathBehind: pathBehind, 
       pathAhead: pathAhead
     }
@@ -234,16 +246,16 @@ var test__kat_katPathDiff = function() {
   // The object path we'll be searching for plus something at the end to try and trip up the process
   var path="/foo/bar/dan/boing/"
   var shouldBe = {
-    jsonPath: "/children/0/children/1/children/2/",
+    jsonPathBehind: "/children/0/children/1/children/2/",
     pathBehind: "/foo/bar/dan/",
     pathAhead: "/boing/"
   }
 
   var katPathDiff = kat.katPathDiff(path, object)
 
-  if(katPathDiff.jsonPath != shouldBe.jsonPath) {
-    console.log("TEST:fail -- katPathDiff.jsonPath")
-    console.log(katPathDiff.jsonPath + " should be " + shouldBe.jsonPath)
+  if(katPathDiff.jsonPathBehind != shouldBe.jsonPathBehind) {
+    console.log("TEST:fail -- katPathDiff.jsonPathBehind")
+    console.log(katPathDiff.jsonPathBehind + " should be " + shouldBe.jsonPathBehind)
   }
   
   if(katPathDiff.pathBehind != shouldBe.pathBehind) {
@@ -316,6 +328,9 @@ var test__kat_addItemToKatObject = function() {
       console.log(newKatObject.children[0].children[1].children[2])
       console.log("REASON: object should have a children property.")
     }
+    else {
+      console.log("TEST:PASS -- katPathDiff.addItemToKatObject")
+    }
   })
 
 
@@ -332,7 +347,7 @@ var test__kat_addItemToKatFile = function() {
 /*
  * Run tests
  */
-test__kat_katPathDiff()
+//test__kat_katPathDiff()
 test__kat_addItemToKatObject()
 //test__kat_addItemToKatFile()
 
