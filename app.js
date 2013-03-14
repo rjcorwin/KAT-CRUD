@@ -119,11 +119,14 @@ var kat = {
 
     // If there is road ahead, blaze the trail to the next cairn and call back into thyself with the result
     if(katPathDiff.pathAhead != "/") {
+
       var  nextItemURL = kat.parentTree.settings.http.root + 
         kat.parentTree.settings.http.byPath + 
         '"' + katPathDiff.pathBehind + katPathDiff.pathAhead.split('/')[1] + "/" + '"'
+      console.log(nextItemURL)
+
       $.getJSON(nextItemURL, function(response) {
-        if (response.rows.lenght > 0) {
+        if (response.rows.length > 0) {
           // We found something in the database to build out our path
           var item = response.rows[0].value
         }
@@ -134,17 +137,13 @@ var kat = {
 
         jsonpatch.apply(katObject, [{op: 'add', path: katPathDiff.jsonPathBehind + "children", value: [item]}]);
 
-        kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
-          // Send the new Object down the recursive rabbit whole
-          return newKatObject
-        })
+        kat.addItemToKatObject(newItem, katObject, callback)
         
       })
 
     }    
     else {
-      // We've reached the end of the path
-      jsonpatch.apply(katObject, [{op: 'add', path: katPathDiff.jsonPathBehind + "children", value: [newItem]}]);
+      // We've reached the end of the path, time to head home
       if (callback && typeof(callback) === "function") {
         callback(katObject)
       }
