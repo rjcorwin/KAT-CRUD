@@ -14,8 +14,8 @@ app.use(express.bodyParser())
 /*
  * Settings
  */
-var katBackend = {
-  library: "http://192.168.0.101:5984/library",
+var katParent = {
+  byPath: "http://192.168.0.101:5984/library/_design/owl/by-path?key=",
 }
 
 
@@ -26,18 +26,22 @@ var katBackend = {
 
 // Create
 app.post('/', function(req, res){
-  // @todo
+  kat.addItemToKatFile(req.param.katFilePath, req.body, function(status) {
+    res.send(status)
+  })
 })
 
 // Read
 app.get('/', function(req, res){
   // @todo
+  var katFilePath // Could be katParent, could be param in url
+  var katPath // The item in the katFile to read
+  var recursive // Get everything below katPath?
 })
 
 // Update
 app.put('/', function(req, res){
-  kat.addItemToKatFile(req.param.katFilePath, req.body)
-  res.send('success')
+  // @todo
 })
 
 // Delete
@@ -61,7 +65,7 @@ var kat = {
   /* 
    * Add a new item to a KAT file.
    */
-  addItemToKatFile : function(katFilePath, newItem, returnKatObject = false) {
+  addItemToKatFile : function(katFilePath, newItem, callback) {
 
     fs.readFile(katFilePath, "utf8", function(err, katJson) {
       
@@ -70,7 +74,9 @@ var kat = {
       kat.addItemToKatObject(newItem, katObject, function (newKatObject){
         fs.writeFile(katFilePath, JSON.stringify(newKatObject, null, 4))
         if (returnKatObject == true) {
-          return newKatObject
+          if (callback && typeof(callback) === "function") {
+            callback(newKatObject)
+          }
         }
       })
 
@@ -82,7 +88,7 @@ var kat = {
   /*
    * Recursive loop that builds the topic tree to a specific path destination
    */
-  addItemToKatObject : function(newItem, katObject, callBack) {
+  addItemToKatObject : function(newItem, katObject, callback) {
 
     // Find what will be the actual JSON path to the newItem, which may be an incomplete path
     var katPathDiff = kat.katPathDiff(newItem.path, katObject).split("/")
@@ -90,7 +96,7 @@ var kat = {
     // If there is road ahead, blaze the trail to the next cairn and call back into thyself with the result
     if(_.isArray(katPathDiff.pathBehind.slice('/'))) {
 
-      $.getJSON(katBackend..library + "/_design/owl/by-path?key=" + katPathDiff.pathBehind, function(Doc) {
+      $.getJSON(katParent.byPath + katPathDiff.pathBehind, function(Doc) {
 
         katObject.children.push(Doc)
         kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
@@ -104,7 +110,9 @@ var kat = {
     else {
       // We've reached the end of the path
       katObject.children.push(Doc)
-      callBack(katObject)
+      if (callback && typeof(callback) === "function") {
+        callback(katObject)
+      }
     }
   },
 
