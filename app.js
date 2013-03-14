@@ -14,9 +14,8 @@ app.use(express.bodyParser())
 /*
  * Settings
  */
-var owlSettings = {
+var katBackend = {
   library: "http://192.168.0.101:5984/library",
-  dataFolder: "/Users/rj/Box/OWL/data"
 }
 
 
@@ -24,13 +23,12 @@ var owlSettings = {
 /*
  * HTTP API
  */
-app.post('/add-couch-doc-to-group/:groupId/:couchId', function(req, res){
-  $.getJSON(owlSettings.library + "/" + req.params.couchId, function(couchDoc) {
-    var katJsonFilePath = owlSettings.dataFolder + "/groups/" + req.params.groupId + "/topics"
-    kat.add(katJsonFilePath, couchDoc)
-  })
+
+app.post('/add-item-to-kat-file', function(req, res){
+  kat.addItemToKatFile(req.param.katFilePath, req.body)
   res.send('success')
 })
+
 app.listen(4200)
 console.log('Listening on port 4200')
 
@@ -47,24 +45,18 @@ var kat = {
   /* 
    * Add a new item to a KAT file.
    */
-  add : function(katFilePath, newItem) {
+  addItemToKatFile : function(katFilePath, newItem, returnKatObject = false) {
 
     fs.readFile(katFilePath, "utf8", function(err, katJson) {
       
       var katObject = JSON.parse(katJson)
       
-      // Find what will be the actual JSON path to the newItem, which may be an incomplete path
-      var katPathInfo = kat.katPathInfo(newItem.path, katObject).split("/")
-
-      if(katPathInfo.pathAhead) {
-        // Blaze the trail
-        kat.blaze(katPathInfo.pathBehind, katPathAhead.pathAhead, katObject, katFilePath)
-      }
-      else {
-        // We can just add the object without blazing a trail
-        katObject = jsonpatch.apply(JSON.stringify(katObject), [{op: 'add', path: katPathInfo.jsonPath + "0", value: newItem}])
-        fs.writeFile(owlSettings.dataFolder + "/groups/" + req.params.groupId + "/topics", JSON.stringify(topics, null, 4))
-      }
+      kat.addItemToKatObject(newItem, katObject, function (newKatObject){
+        fs.writeFile(katFilePath, JSON.stringify(newKatObject, null, 4))
+        if (returnKatObject == true) {
+          return newKatObject
+        }
+      })
 
     })
   },
@@ -74,20 +66,30 @@ var kat = {
   /*
    * Recursive loop that builds the topic tree to a specific path destination
    */
-  blaze : function(pathBehind, pathAhead, katObject, katFilePath) {
-    $.getJSON(owlSettings.library + "/_design/owl/by-path?key=" + pathBehind, function(Doc) {
+  addItemToKatObject : function(newItem, katObject, callBack) {
 
-      // If there is road ahead, call back into thyself
-      if(_.isArray(pathBehind.slice('/'))) {
-        // pass one back
-        //pathAhead[] += pathBehind.pop()
-        return kat.rabbitHole(pathBehind, pathAhead, katObject, katFilePath)
-      }    
-      else {
-        // We've reached the end of the path
-        fs.writeFile(katFilePath, JSON.stringify(katObject, null, 4))
-      }
-    })
+    // Find what will be the actual JSON path to the newItem, which may be an incomplete path
+    var katPathDiff = kat.katPathDiff(newItem.path, katObject).split("/")
+
+    // If there is road ahead, blaze the trail to the next cairn and call back into thyself with the result
+    if(_.isArray(katPathDiff.pathBehind.slice('/'))) {
+
+      $.getJSON(katBackend.library + "/_design/owl/by-path?key=" + katPathDiff.pathBehind, function(Doc) {
+
+        katObject.children.push(Doc)
+        kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
+          // Send the new Object down the recursive rabbit whole
+          return newKatObject
+        })
+        
+      })
+
+    }    
+    else {
+      // We've reached the end of the path
+      katObject.children.push(Doc)
+      callBack(katObject)
+    }
   },
 
 
@@ -95,7 +97,7 @@ var kat = {
   /*
    * Translate a path attribute found in KA Lite Topics.json to the JSON path of that object
    */
-  katPathInfo : function(fullPath, katObject) {
+  katPathDiff : function(fullPath, katObject) {
     // The slugs we'll be looking for
     var slugs = fullPath.split("/").pop().shift()
     // Get rid of unneccessary blanks at end and beginning of array
@@ -141,7 +143,7 @@ var kat = {
 /*
  * TEST kat.katPathToJsonPath(path, object)
  */
-var test_kat_katPathInfo = function() {
+var test__kat_katPathDiff = function() {
   var object={
     "path":"/",
     "slug":"",
@@ -179,27 +181,36 @@ var test_kat_katPathInfo = function() {
     pathAhead: "/boing/"
   }
 
-  var katPathInfo = kat.katPathInfo(path, object)
+  var katPathDiff = kat.katPathDiff(path, object)
 
-  if(katPathInfo.jsonPath != shouldBe.jsonPath) {
-    console.log("TEST:fail -- katPathInfo.jsonPath")
-    console.log(katPathInfo.jsonPath + " should be " + shouldBe.jsonPath)
+  if(katPathDiff.jsonPath != shouldBe.jsonPath) {
+    console.log("TEST:fail -- katPathDiff.jsonPath")
+    console.log(katPathDiff.jsonPath + " should be " + shouldBe.jsonPath)
   }
   
-  if(katPathInfo.pathBehind != shouldBe.pathBehind) {
-    console.log("TEST:fail -- katPathInfo.pathBehind")
-    console.log(katPathInfo.pathBehind + " should be " + shouldBe.pathBehind)
+  if(katPathDiff.pathBehind != shouldBe.pathBehind) {
+    console.log("TEST:fail -- katPathDiff.pathBehind")
+    console.log(katPathDiff.pathBehind + " should be " + shouldBe.pathBehind)
   }
 
-  if(katPathInfo.pathAhead != shouldBe.pathAhead) {
-    console.log("TEST:fail -- katPathInfo.pathAhead")
-    console.log(katPathInfo.pathAhead + " should be " + shouldBe.pathAhead)
+  if(katPathDiff.pathAhead != shouldBe.pathAhead) {
+    console.log("TEST:fail -- katPathDiff.pathAhead")
+    console.log(katPathDiff.pathAhead + " should be " + shouldBe.pathAhead)
   }
 }
 
+var test__kat_addItemToKatObject = function() {
+
+}
+
+var test__kat_addItemToKatFile = function() {
+
+}
 
 /*
  * Run tests
  */
-test_kat_katPathInfo()
+test__kat_katPathDiff()
+test__kat_addItemToKatObject()
+test__kat_addItemToKatFile()
 
