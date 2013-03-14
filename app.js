@@ -173,7 +173,17 @@ var kat = {
     })
 
     // @todo get pathAhead
-    var pathAhead
+    var slugsAhead = slugs
+    var i = 0
+    while(i < map.length) {
+      slugsAhead.shift()
+      i++
+    }
+    var pathAhead = "/"
+    $.each(slugsAhead, function (slugKey, slug) {
+      pathAhead += slug + "/"
+    })
+
     return { 
       fullPath: fullPath,
       jsonPath: jsonPath,
@@ -299,9 +309,8 @@ var test__kat_addItemToKatObject = function() {
 
   kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
     // TEST
-
     console.log("TEST:unknown -- katPathDiff.addItemToKatObject -- newKatObject:")
-    console.log(newKatObject)
+    console.log(newKatObject.children[0].children[1].children[2])
   })
 
 
@@ -319,6 +328,6 @@ var test__kat_addItemToKatFile = function() {
  * Run tests
  */
 test__kat_katPathDiff()
-test__kat_addItemToKatObject()
-test__kat_addItemToKatFile()
+//test__kat_addItemToKatObject()
+//test__kat_addItemToKatFile()
 
