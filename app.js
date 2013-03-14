@@ -114,6 +114,8 @@ var kat = {
 
     // Find what will be the actual JSON path to the newItem, which may be an incomplete path
     var katPathDiff = kat.katPathDiff(newItem.path, katObject)
+    console.log("katPathDiff:")
+    console.log(katPathDiff)
 
     // If there is road ahead, blaze the trail to the next cairn and call back into thyself with the result
     if(_.isArray(katPathDiff.pathBehind.slice('/'))) {
@@ -298,7 +300,7 @@ var test__kat_addItemToKatObject = function() {
   }
 
   var newItem = {
-    "path":"/foo/bar/dan/boing/test-item",
+    "path":"/foo/bar/dan/boing/test-item/",
     "slug":"test-item"
   }
 
@@ -309,8 +311,11 @@ var test__kat_addItemToKatObject = function() {
 
   kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
     // TEST
-    console.log("TEST:unknown -- katPathDiff.addItemToKatObject -- newKatObject:")
-    console.log(newKatObject.children[0].children[1].children[2])
+    if(!_.has(newKatObject.children[0].children[1].children[2], "children")) {
+      console.log("TEST:FAIL -- katPathDiff.addItemToKatObject -- newKatObject.children[0].children[1].children[2]:")
+      console.log(newKatObject.children[0].children[1].children[2])
+      console.log("REASON: object should have a children property.")
+    }
   })
 
 
@@ -328,6 +333,6 @@ var test__kat_addItemToKatFile = function() {
  * Run tests
  */
 test__kat_katPathDiff()
-//test__kat_addItemToKatObject()
+test__kat_addItemToKatObject()
 //test__kat_addItemToKatFile()
 
