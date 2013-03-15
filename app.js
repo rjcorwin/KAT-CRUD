@@ -10,17 +10,6 @@ var tests = require("./test/tests.js")
 app.use(express.bodyParser())
 
 
-
-
-/*
- * Settings
- */
-var katParent = {
-  byPath: "http://192.168.0.101:5984/library/_design/owl/by-path?key=",
-}
-
-
-
 /*
  * HTTP API
  */
@@ -65,7 +54,7 @@ console.log('Listening on port 4200')
 
 
 /*
- *
+ * For managing KAT files. KAT stands for Khan Academy Topics.json structured file.
  */
 var kat = {
 
