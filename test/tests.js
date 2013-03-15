@@ -21,7 +21,7 @@ run_tests : function() {
 
   this.test__kat_katPathDiff()
   this.test__kat_addItemToKatObject()
-  //test__kat_addItemToKatFile()
+  this.test__kat_addItemToKatFile()
 },
 
 
@@ -106,7 +106,6 @@ test__kat_addItemToKatObject : function(verbose) {
 
   verbose = false
 
-
   // SETUP
 
   var katObject = {
@@ -176,7 +175,23 @@ test__kat_addItemToKatObject : function(verbose) {
  */
 
 test__kat_addItemToKatFile : function() {
+  var newItem = {
+    "path":"/foo/bar/dan/boing/test-item/",
+    "slug":"test-item"
+  }
 
+  var shouldBe = {
+    json: '{"path":"/","slug":"","children":[{"path":"/foo/","slug":"foo","children":[{},{"path":"/foo/bar/","slug":"bar","children":[{},{},{"path":"/foo/bar/dan/","slug":"dan","children":[{"_id":"boing","_rev":"1-3bd49daf4e794c77d070bf666e26728e","slug":"boing","path":"/foo/bar/dan/boing/","children":[{"path":"/foo/bar/dan/boing/test-item/","slug":"test-item"}]}]}]},{}]},{},{}]}'
+  }
+
+  kat.addItemToKatFile("./test/testKatFile.json", newItem, function (katObject) {
+    if (JSON.stringify(katObject) == shouldBe.json) {
+      console.log("TEST:PASS -- kat.addItemToKatFile")
+    }
+    else {
+      console.log("TEST:FAIL -- kat.addItemToKatFile")
+    }
+  })
 },
 
 

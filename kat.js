@@ -36,17 +36,15 @@ module.exports = {
    * Add a new item to a KAT file.
    */
   addItemToKatFile : function(katFilePath, newItem, callback) {
-
+    var that = this // save this context for when the fs.readFile callback
     fs.readFile(katFilePath, "utf8", function(err, katJson) {
       
       var katObject = JSON.parse(katJson)
       
-      kat.addItemToKatObject(newItem, katObject, function (newKatObject){
+      that.addItemToKatObject(newItem, katObject, function (newKatObject){
         fs.writeFile(katFilePath, JSON.stringify(newKatObject, null, 4))
-        if (returnKatObject == true) {
-          if (callback && typeof(callback) === "function") {
-            callback(newKatObject)
-          }
+        if (callback && typeof(callback) === "function") {
+          callback(newKatObject)
         }
       })
 

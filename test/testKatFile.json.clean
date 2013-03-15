@@ -1,0 +1,42 @@
+{
+    "path": "/",
+    "slug": "",
+    "children": [
+        {
+            "path": "/foo/",
+            "slug": "foo",
+            "children": [
+                {},
+                {
+                    "path": "/foo/bar/",
+                    "slug": "bar",
+                    "children": [
+                        {},
+                        {},
+                        {
+                            "path": "/foo/bar/dan/",
+                            "slug": "dan",
+                            "children": [
+                                {
+                                    "_id": "boing",
+                                    "_rev": "1-3bd49daf4e794c77d070bf666e26728e",
+                                    "slug": "boing",
+                                    "path": "/foo/bar/dan/boing/",
+                                    "children": [
+                                        {
+                                            "path": "/foo/bar/dan/boing/test-item/",
+                                            "slug": "test-item"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {}
+            ]
+        },
+        {},
+        {}
+    ]
+}
