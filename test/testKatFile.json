@@ -1,0 +1,28 @@
+{
+  "path":"/",
+  "slug":"",
+  "children": [
+    {                                  
+      "path":"/foo/",
+      "slug":"foo",
+      "children": [
+        { },
+        {                              
+          "path":"/foo/bar/",
+          "slug":"bar",
+          "children": [
+            { },
+            { },
+            {                          
+              "path":"/foo/bar/dan/", 
+              "slug":"dan"
+            }
+          ]
+        },
+        { }
+      ]
+    },
+    { },
+    { }
+  ]
+}
