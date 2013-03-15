@@ -187,6 +187,7 @@ test__kat_addItemToKatFile : function() {
   kat.addItemToKatFile("./test/testKatFile.json", newItem, function (katObject) {
     if (JSON.stringify(katObject) == shouldBe.json) {
       console.log("TEST:PASS -- kat.addItemToKatFile")
+      // @todo Copy testKatFile.json.clean to testKatFile.json to reset the test
     }
     else {
       console.log("TEST:FAIL -- kat.addItemToKatFile")
