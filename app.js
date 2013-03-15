@@ -33,7 +33,15 @@ app.get('/*', function(req, res){
       res.send(err)
     }
     else {
-      res.send(katJson)
+      if (_.has(req.param, "by_path") && _.has(req.param, "prune_topics")) {
+        res.send(JSON.stringify(kat.flattenKatObjectByPath(JSON.parse(katJson), true)))
+      }
+      else if (_.has(req.param, "by_path")) {
+        res.send(JSON.stringify(kat.flattenKatObjectByPath(JSON.parse(katJson), false)))
+      }
+      else {
+        res.send(katJson)
+      }
     }
 
   })

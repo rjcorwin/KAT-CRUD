@@ -3,6 +3,7 @@ var fs = require('fs')
 var $ = require('jQuery')
 var _ = require("underscore")
 var jsonpatch = require("json-patch")
+var traverse = require("traverse")
 
 /*
  * For managing KAT files. KAT stands for Khan Academy Topics.json structured file.
@@ -40,7 +41,7 @@ module.exports = {
     fs.readFile(katFilePath, "utf8", function(err, katJson) {
       
       var katObject = JSON.parse(katJson)
-      
+
       that.addItemToKatObject(newItem, katObject, function (newKatObject){
         fs.writeFile(katFilePath, JSON.stringify(newKatObject, null, 4))
         if (callback && typeof(callback) === "function") {
@@ -98,6 +99,34 @@ module.exports = {
       }
     }
   },
+
+
+
+
+  /*
+   * Transform a KAT object into a flat object where the properties are paths
+   */
+  flattenKatObjectByPath : function (katObject, pruneTopics) {
+
+    var katObjectByPath = {}
+
+    $.each(traverse.nodes(katObject), function (key, obj) {
+      if (_.has(obj, "path") && _.has(obj, "kind")) {
+        if(pruneTopics == true) {
+          if(obj.kind != "Topic") {
+            katObjectByPath[obj.path] = obj
+          }
+        }
+        else {
+          katObjectByPath[obj.path] = obj
+        }
+      }
+    })
+
+    return katObjectByPath
+
+  },
+
 
 
 

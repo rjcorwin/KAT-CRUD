@@ -18,10 +18,10 @@ module.exports = {
  * Run tests
  */
 run_tests : function() {
-
   this.test__kat_katPathDiff()
   this.test__kat_addItemToKatObject()
   this.test__kat_addItemToKatFile()
+  this.test__kat_flattenKatObjectByPath()
 },
 
 
@@ -158,7 +158,7 @@ test__kat_addItemToKatObject : function(verbose) {
       console.log("REASON: object should have a children property.")
     }
     else {
-      console.log("TEST:PASS -- katPathDiff.addItemToKatObject")
+      console.log("TEST:pass -- katPathDiff.addItemToKatObject")
       if(verbose == true) {
        console.log(JSON.stringify(newKatObject, null, 4))
       }
@@ -186,7 +186,7 @@ test__kat_addItemToKatFile : function() {
 
   kat.addItemToKatFile("./test/testKatFile.json", newItem, function (katObject) {
     if (JSON.stringify(katObject) == shouldBe.json) {
-      console.log("TEST:PASS -- kat.addItemToKatFile")
+      console.log("TEST:pass -- kat.addItemToKatFile")
       // @todo Copy testKatFile.json.clean to testKatFile.json to reset the test
     }
     else {
@@ -195,6 +195,73 @@ test__kat_addItemToKatFile : function() {
   })
 },
 
+
+
+
+/*
+ * TEST kat.  flattenKatObjectByPath(katObject, pruneTopics, callback)
+ */
+
+test__kat_flattenKatObjectByPath : function() {
+
+  var katObject = {
+    "path":"/",
+    "slug":"",
+    "kind":"Topic",
+    "children": [
+      {                                  
+        "path":"/foo/",
+        "slug":"foo",
+        "kind":"Topic",
+        "children": [
+          { },
+          {                             
+            "path":"/foo/bar/",
+            "slug":"bar",
+            "kind": "Topic",
+            "children": [
+              { },
+              { },
+              {                          
+                "path":"/foo/bar/dan/", 
+                "slug":"dan",
+                "kind":"Topic",
+                "children": [
+                  {
+                    "path":"/foo/bar/dan/zig/",
+                    "slug":"zig",
+                    "kind":"Video"
+                  },
+                  {
+                    "path":"/foo/bar/dan/zag/",
+                    "slug":"zag",
+                    "kind":"Video"
+                  }
+                ]
+              }
+            ]
+          },
+          { }
+        ]
+      },
+      { },
+      { },
+    ]
+  }
+
+  var shouldBe = {
+    json: JSON.stringify({ '/foo/bar/dan/zig/': { path: '/foo/bar/dan/zig/', slug: 'zig', kind: 'Video' }, '/foo/bar/dan/zag/': { path: '/foo/bar/dan/zag/', slug: 'zag', kind: 'Video' } })
+  }
+
+  flatKatObject = kat.flattenKatObjectByPath(katObject, true)
+  if (JSON.stringify(flatKatObject) == shouldBe.json) {
+    console.log("TEST:pass -- kat.flattenKatObjectByPath")
+  }
+  else { 
+    console.log("TEST:FAIL -- kat.flattenKatObjectByPath")
+  }
+
+}
 
 
 } // end of module.exports
