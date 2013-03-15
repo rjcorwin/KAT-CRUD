@@ -1,5 +1,28 @@
+// Tests for kat.js
+
+var express = require('express')
+var app = express()
+var request = require('request')
+var fs = require('fs')
+var $ = require('jQuery')
+var _ = require("underscore")
+var jsonpatch = require("json-patch")
+var kat = require("../kat.js")
+
 
 module.exports = {
+
+
+
+/*
+ * Run tests
+ */
+run_tests : function() {
+
+  this.test__kat_katPathDiff()
+  this.test__kat_addItemToKatObject()
+  //test__kat_addItemToKatFile()
+},
 
 
 
@@ -51,21 +74,27 @@ test__kat_katPathDiff : function() {
     console.log("TEST:fail -- katPathDiff.jsonPathBehind")
     console.log(katPathDiff.jsonPathBehind + " should be " + shouldBe.jsonPathBehind)
   }
-  
+  else {
+    console.log("TEST:pass -- katPathDiff.jsonPathBehind")
+  }
+   
   if(katPathDiff.pathBehind != shouldBe.pathBehind) {
     console.log("TEST:fail -- katPathDiff.pathBehind")
     console.log(katPathDiff.pathBehind + " should be " + shouldBe.pathBehind)
+  }
+  else {
+    console.log("TEST:pass -- katPathDiff.pathBehind")
   }
 
   if(katPathDiff.pathAhead != shouldBe.pathAhead) {
     console.log("TEST:fail -- katPathDiff.pathAhead")
     console.log(katPathDiff.pathAhead + " should be " + shouldBe.pathAhead)
   }
+  else {
+    console.log("TEST:pass -- katPathDiff.pathAhead")
+  }
+
 },
-
-
-
-
 
 
 
@@ -73,7 +102,9 @@ test__kat_katPathDiff : function() {
  * TEST kat.addItemToKatObject(newItem, katObject, callback)
  */
 
-test__kat_addItemToKatObject : function() {
+test__kat_addItemToKatObject : function(verbose) {
+
+  verbose = false
 
 
   // SETUP
@@ -112,24 +143,31 @@ test__kat_addItemToKatObject : function() {
     "slug":"test-item"
   }
 
+  shouldBe = {
+    json: '{"path":"/","slug":"","children":[{"path":"/foo/","slug":"foo","children":[{},{"path":"/foo/bar/","slug":"bar","children":[{},{},{"path":"/foo/bar/dan/","slug":"dan","children":[{"_id":"boing","_rev":"1-3bd49daf4e794c77d070bf666e26728e","slug":"boing","path":"/foo/bar/dan/boing/","children":[{"path":"/foo/bar/dan/boing/test-item/","slug":"test-item"}]}]}]},{}]},{},{}]}'
+  }
+
 
   // EXECUTE
 
   kat.addItemToKatObject(newItem, katObject, function(newKatObject) {
     // TEST
-    if(!_.has(newKatObject.children[0].children[1].children[2], "children")) {
+    //if(!_.has(newKatObject.children[0].children[1].children[2], "children")) {
+    if(shouldBe.json != JSON.stringify(newKatObject)) {
       console.log("TEST:FAIL -- katPathDiff.addItemToKatObject -- newKatObject.children[0].children[1].children[2]:")
-      console.log(newKatObject.children[0].children[1].children[2])
+      console.log(JSON.stringify(newKatObject, null, 4))
       console.log("REASON: object should have a children property.")
     }
     else {
       console.log("TEST:PASS -- katPathDiff.addItemToKatObject")
+      if(verbose == true) {
+       console.log(JSON.stringify(newKatObject, null, 4))
+      }
     }
   })
 
 
 },
-
 
 
 
@@ -142,15 +180,5 @@ test__kat_addItemToKatFile : function() {
 },
 
 
-
-run_tests : function() {
-
-  /*
-   * Run tests
-   */
-  //test__kat_katPathDiff()
-  test__kat_addItemToKatObject()
-  //test__kat_addItemToKatFile()
-}
 
 } // end of module.exports
