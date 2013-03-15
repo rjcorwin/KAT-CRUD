@@ -20,9 +20,7 @@ tests.run_tests()
 
 // Create
 app.post('/*', function(req, res){
-  kat.addItemToKatFile(req.url, req.body, function(status) {
-    res.send(status)
-  })
+  // @todo
 })
 
 // Read
@@ -43,7 +41,9 @@ app.get('/*', function(req, res){
 
 // Update
 app.put('/*', function(req, res){
-  // @todo
+  kat.addItemToKatFile(req.url, req.body, function(status) {
+    res.send(status)
+  })
 })
 
 // Delete
