@@ -111,14 +111,16 @@ module.exports = {
     var katObjectByPath = {}
 
     $.each(traverse.nodes(katObject), function (key, obj) {
-      if (_.has(obj, "path") && _.has(obj, "kind")) {
-        if(pruneTopics == true) {
-          if(obj.kind != "Topic") {
+      if(_.isObject(obj)) {
+        if (_.has(obj, "path") && _.has(obj, "kind")) {
+          if(pruneTopics == true) {
+            if(obj.kind != "Topic") {
+              katObjectByPath[obj.path] = obj
+            }
+          }
+          else {
             katObjectByPath[obj.path] = obj
           }
-        }
-        else {
-          katObjectByPath[obj.path] = obj
         }
       }
     })

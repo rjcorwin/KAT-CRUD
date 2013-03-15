@@ -25,7 +25,8 @@ app.post('/*', function(req, res){
 
 // Read
 app.get('/*', function(req, res){
-  var katFilePath = req.url
+  var katFilePath = req._parsedUrl.pathname
+  console.log("GET: " + req.url)
   var katPath // @todo The item in the katFile to read
   var recursive // @todo Get everything below katPath
   fs.readFile(katFilePath, "utf8", function(err, katJson) {
@@ -33,14 +34,23 @@ app.get('/*', function(req, res){
       res.send(err)
     }
     else {
-      if (_.has(req.param, "by_path") && _.has(req.param, "prune_topics")) {
-        res.send(JSON.stringify(kat.flattenKatObjectByPath(JSON.parse(katJson), true)))
-      }
-      else if (_.has(req.param, "by_path")) {
-        res.send(JSON.stringify(kat.flattenKatObjectByPath(JSON.parse(katJson), false)))
-      }
-      else {
-        res.send(katJson)
+      if(_.has(req, "query")) {
+        if (_.has(req.query, "by_path") && _.has(req.query, "prune_topics")) {
+          res.send(JSON.stringify(kat.flattenKatObjectByPath(JSON.parse(katJson), true)))
+        }
+        else if (_.has(req.query, "by_path")) {
+          var katObject = JSON.parse(katJson)
+          if(_.isObject(katObject)) {
+            var flatKatObject = kat.flattenKatObjectByPath(katObject, false)
+            res.send(JSON.stringify(flatKatObject))
+          }
+          else {
+            res.send("Unable to parse JSON. May be invalid.")
+          }
+        }
+        else {
+          res.send(katJson)
+        }
       }
     }
 
